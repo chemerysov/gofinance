@@ -10,6 +10,7 @@ interest rates: conversion between interest rates, discount factors
 run the following commands:
 
 `go get github.com/chemerysov/gofinance@latest`
+
 `go mod tidy`
 
 in your code, add line:
