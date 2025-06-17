@@ -2,7 +2,7 @@ package gofinance
 
 import "math"
 
-// # Rate represents an interest rate, discount rate, compound rate, etc.
+// Rate represents an interest rate, discount rate, compound rate, etc.
 type Rate interface {
 	// DiscountFactor returns discount factor based on number of years.
 	// Math details:
