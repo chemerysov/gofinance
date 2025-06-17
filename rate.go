@@ -2,97 +2,150 @@ package gofinance
 
 import "math"
 
+// # Rate represents an interest rate, discount rate, compound rate, etc.
 type Rate interface {
-	// derive (present value) discount factor based on number of years
-	// discount factor is a factor DF such that
-	// present value of cash flow = DF * future value of cash flow
-	// compound factor = 1 / discount factor
+	// DiscountFactor returns discount factor based on number of years.
+	// Math details:
+	//
+	// PresentValueOfCashFlow = DiscountFactor * FutureValueOfCashFlow
+	//
+	// FutureValueOfCashFlow = CompoundFactor * PresentValueOfCashFlow
+	//
+	// CompoundFactor = 1 / DiscountFactor
 	DiscountFactor(years float64) float64
 
-	// convert any rate to effective annual rate
-	// for more on this rate see struct RateAnnualEffective
+	// RateAnnualEffective converts any rate to effective annual rate.
+	// Note that an effective annual rate is the same as
+	// annual percentage rate compounded once a year / annually.
+	// For more on this rate see [RateAnnualEffective].
 	RateAnnualEffective() float64
 
-	// convert any rate to continuous rate
-	// continuous rate = \lim_{n->\infin} (1 + APR/n)^n
-	// so an APR compounded n approaches infinity times
+	// RateContinuous converts any rate to continuous rate.
+	// For more on this rate see [RateContinuous].
 	RateContinuous() float64
 }
 
-// implements Rate for annual percentage rate
-// to specify this rate fully you need compounding frequency, here PeriodsPerYear
+// RateAnnualPercentage implements [Rate] for annual percentage rate.
+// To specify this rate fully, a compounding frequency is needed, here PeriodsPerYear.
+// That is, 5% annual percentage rate compounded monthly
+// and 5% annual percentage rate compunded quarterly are different rates.
 type RateAnnualPercentage struct {
 	Value          float64
 	PeriodsPerYear float64
 }
 
-// DF = (1 + APR/n)^{-n*t}
+// DiscountFactor implements [Rate].
+// DiscountFactor returns discount factor based on number of years.
+// Math details:
+//
+// DiscountFactor = (1 + AnnualPercentageRate / Periods)^{-Periods * Years}
 func (r RateAnnualPercentage) DiscountFactor(years float64) float64 {
 	return math.Pow(1+r.Value/r.PeriodsPerYear, -r.PeriodsPerYear*years)
 }
 
-// CF = (1 + APR/n)^n = 1 + EAR
-// EAR = (1 + APR/n)^n - 1
+// RateAnnualEffective implements [Rate].
+// RateAnnualEffective converts any rate to effective annual rate.
+// Math details:
+//
+// CompoundFactor = (1 + AnnualPercentageRate / Periods)^Periods = 1 + EffectiveAnnualRate
+//
+// EffectiveAnnualRate = (1 + AnnualPercentageRate / Periods)^Periods - 1
 func (r RateAnnualPercentage) RateAnnualEffective() float64 {
 	return math.Pow(1+r.Value/r.PeriodsPerYear, r.PeriodsPerYear) - 1
 }
 
-// CF = 1 + EAR = e^{CR}
-// CR = log(1 + EAR)
-// converting from EAR as opposed to from APR simplifies math
+// RateContinuous implements [Rate].
+// RateContinuous converts any rate to continuous rate.
+// Math details:
+//
+// CompoundFactor = 1 + EffectiveAnnualRate = e^{ContinuousRate}
+//
+// ContinuousRate = ln(1 + EffectiveAnnualRate)
 func (r RateAnnualPercentage) RateContinuous() float64 {
 	return math.Log(1 + r.RateAnnualEffective())
 }
 
-// implements Rate for effective rate
-// to specify this rate fully you need compounding frequency, here PeriodsPerYear
-// that is, there can exist effective annual rate, effective monthly rate, etc
+// RateEffective implements [Rate] for effective rate.
+// To specify this rate fully, a compounding frequency is needed, here PeriodsPerYear.
+// That is, 5% effective annual rate and 5% effective monthly rate are different rates.
 type RateEffective struct {
 	Value          float64
 	PeriodsPerYear float64
 }
 
-// DF = (1 + ER)^{-n*t}
+// DiscountFactor implements [Rate].
+// DiscountFactor returns discount factor based on number of years.
+// Math details:
+//
+// DicountFactor = (1 + EffectiveRate)^{-Periods * Years}
 func (r RateEffective) DiscountFactor(years float64) float64 {
 	return math.Pow(1+r.Value, -r.PeriodsPerYear*years)
 }
 
-// CF = (1 + ER)^n = 1 + EAR
-// EAR = (1 + ER)^n - 1
+// RateAnnualEffective implements [Rate].
+// RateAnnualEffective converts any rate to effective annual rate.
+// Math details:
+//
+// CompoundFactor = (1 + EffectiveRate)^Periods = 1 + EffectiveAnnualRate
+//
+// EffectiveAnnualRate = (1 + EffectiveRate)^Periods - 1
 func (r RateEffective) RateAnnualEffective() float64 {
 	return math.Pow(1+r.Value, r.PeriodsPerYear) - 1
 }
 
-// CF = 1 + EAR = e^{CR}
-// CR = log(1 + EAR)
-// converting from EAR as opposed to from APR simplifies math
+// RateContinuous implements [Rate].
+// RateContinuous converts any rate to continuous rate.
+// Math details:
+//
+// CompoundFactor = 1 + EffectiveAnnualRate = e^{ContinuousRate}
+//
+// ContinuousRate = ln(1 + EffectiveAnnualRate)
 func (r RateEffective) RateContinuous() float64 {
 	return math.Log(1 + r.RateAnnualEffective())
 }
 
-// implements Rate for continuous rate
-// no need to specify compounding frequency as it is already specified (continuous)
+// RateContinuous implements [Rate] for continuous rate.
+// No need to specify compounding frequency as it is already specified (continuous).
+// For more details, see [RateContinuous.DiscountFactor].
 type RateContinuous struct {
 	Value float64
 }
 
-// DF = \lim_{n->\infin} (1 + APR/n)^{-nt}
-// e^x = \lim_{n->\infin} (1 + x/n)^n   by definition
-// e^APR = \lim_{n->\infin} (1 + APR/n)^n
-// DF = e^{APR * -t}
-// APR compounded continuously = CR
-// DF = e^{CR * -t}
+// DiscountFactor implements [Rate].
+// DiscountFactor returns discount factor based on number of years.
+// Math details:
+//
+// DiscountFactor = \lim_{Periods -> \infin} (1 + AnnualPercentageRate / Periods)^{-Periods * Years}
+//
+// e^x = \lim_{n -> \infin} (1 + x/n)^n   by definition
+//
+// e^AnnualPercentageRate = \lim_{Periods -> \infin} (1 + AnnualPercentageRate / Periods)^Periods
+//
+// DiscountFactor = e^{AnnualPercentageRate * -Years}
+//
+// AnnualPercentageRate compounded continuously = ContinuousRate
+//
+// DiscountFactor = e^{ContinuousRate * -Years}
 func (r RateContinuous) DiscountFactor(years float64) float64 {
 	return math.Exp(r.Value * -years)
 }
 
-// CF = e^APR = 1 + EAR
-// EAR = e^APR - 1
+// RateAnnualEffective implements [Rate].
+// RateAnnualEffective converts any rate to effective annual rate.
+// Math details:
+//
+// CompoundFactor = e^ContinuousRate = 1 + EffectiveAnnualRate
+//
+// EffectiveAnnualRate = e^ContinuousRate - 1
 func (r RateContinuous) RateAnnualEffective() float64 {
 	return math.Exp(r.Value) - 1
 }
 
-// CR = CR
+// RateContinuous implements [Rate].
+// RateContinuous converts any rate to continuous rate.
+// Math details:
+//
+// ContinuousRate = ContinuousRate
 func (r RateContinuous) RateContinuous() float64 {
 	return r.Value
 }
