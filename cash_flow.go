@@ -186,7 +186,7 @@ func (cashFlows CashFlows) IRR() (Rate, error) {
 
 	// If NPV signs do not differ, expand the upper bound exponentially
 	// until we hit a sign change or a reasonable ceiling.
-	for npvLowerBound*npvUpperBound > 0 && upperBoundRate < 1000 { // 100 000 % p.a. in continuous terms
+	for npvLowerBound*npvUpperBound > 0 && upperBoundRate < 1000 {
 		upperBoundRate *= 2
 		npvUpperBound = npv(upperBoundRate)
 	}
@@ -200,6 +200,6 @@ func (cashFlows CashFlows) IRR() (Rate, error) {
 	root, err := rootfinding.Brent(npv, lowerBoundRate, upperBoundRate, 12)
 	if err != nil {
 		return RateAnnualContinuous{}, fmt.Errorf("IRR: %w", err)
-	}
+	} // this if statement is not covered by tests because difficult to provoke error here
 	return RateAnnualContinuous{Value: root}, nil
 }

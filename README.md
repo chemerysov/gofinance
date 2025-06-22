@@ -2,6 +2,8 @@
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/chemerysov/gofinance.svg)](https://pkg.go.dev/github.com/chemerysov/gofinance)
 [![Go Report Card](https://goreportcard.com/badge/github.com/chemerysov/gofinance)](https://goreportcard.com/report/github.com/chemerysov/gofinance)
+[![Go tests](https://github.com/chemerysov/gofinance/actions/workflows/ci.yml/badge.svg)](https://github.com/chemerysov/gofinance/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/chemerysov/gofinance/graph/badge.svg?token=SLS4S6LUAK)](https://codecov.io/gh/chemerysov/gofinance)
 
 goal: the comprehensive pure Go finance library
 
