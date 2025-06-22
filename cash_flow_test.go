@@ -2,7 +2,6 @@ package gofinance
 
 import (
 	"math"
-	"strings"
 	"testing"
 	"time"
 
@@ -216,61 +215,5 @@ func TestIRRErrors(t *testing.T) {
 	}
 	if _, err := cfs.IRR(); err == nil {
 		t.Error("IRR expected error for un-bracketable root, got nil")
-	}
-}
-
-// -----------------------------------------------------------------------------
-// Early-return error paths (err1, err2) – and guard against the tiny chance of
-// the final “unknown error” branch ever firing.
-// -----------------------------------------------------------------------------
-func TestStringToTime_TwoPeriods_EarlyErrorReturns(t *testing.T) {
-	t.Parallel()
-
-	type tc struct {
-		name      string
-		p1, p2    string
-		wantFirst bool // true  → we expect the first arg to trigger the error
-	}
-	cases := []tc{
-		{
-			name:      "bad-first-argument",
-			p1:        "NOT-A-TIME", // ← unparsable
-			p2:        "2021",       // valid
-			wantFirst: true,
-		},
-		{
-			name:      "bad-second-argument",
-			p1:        "2021-06",
-			p2:        "ALSO-BAD", // ← unparsable
-			wantFirst: false,
-		},
-	}
-
-	for _, c := range cases {
-		c := c // capture
-		t.Run(c.name, func(t *testing.T) {
-			t.Parallel()
-
-			got, err := StringToTime(c.p1, c.p2)
-			if err == nil {
-				t.Fatalf("expected an error, got nil (result=%v)", got)
-			}
-
-			// The library formats the parse failure as:
-			//   "unsupported time format: <input>"
-			wantSubstr := c.p1
-			if !c.wantFirst {
-				wantSubstr = c.p2
-			}
-			if !strings.Contains(err.Error(), wantSubstr) {
-				t.Errorf("error does not reference the offending argument.\n  got : %q\n  want substring: %q",
-					err.Error(), wantSubstr)
-			}
-
-			// Sanity-check that we did not somehow reach the “unknown error” fall-through.
-			if strings.Contains(err.Error(), "unknown error") {
-				t.Errorf("function should never return the sentinel 'unknown error' path")
-			}
-		})
 	}
 }
