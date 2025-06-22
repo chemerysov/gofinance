@@ -15,7 +15,6 @@ var anchor = time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
 // -----------------------------------------------------------------------------
 // daysInYear
 // -----------------------------------------------------------------------------
-
 func TestDaysInYear(t *testing.T) {
 	tests := []struct {
 		year int
@@ -36,7 +35,6 @@ func TestDaysInYear(t *testing.T) {
 // -----------------------------------------------------------------------------
 // yearsBetween
 // -----------------------------------------------------------------------------
-
 func TestYearsBetween(t *testing.T) {
 	a := time.Date(2023, 3, 15, 0, 0, 0, 0, time.UTC)
 	b := time.Date(2026, 2, 10, 0, 0, 0, 0, time.UTC)
@@ -67,7 +65,6 @@ func TestYearsBetween(t *testing.T) {
 // -----------------------------------------------------------------------------
 // CashFlow construction & YearsFrom
 // -----------------------------------------------------------------------------
-
 func TestNewCashFlowAndYearsFrom(t *testing.T) {
 	cf, err := NewCashFlow(100, "2024-06") // month-granularity
 	if err != nil {
@@ -99,7 +96,6 @@ func TestNewCashFlowAndYearsFrom(t *testing.T) {
 // -----------------------------------------------------------------------------
 // PresentValue & PresentValueNow
 // -----------------------------------------------------------------------------
-
 func TestPresentValue(t *testing.T) {
 	// cash flow two years in the future
 	cf := CashFlow{Value: 100, Date: anchor.AddDate(2, 0, 0)}
@@ -122,7 +118,6 @@ func TestPresentValue(t *testing.T) {
 // -----------------------------------------------------------------------------
 // CashFlows.Sort
 // -----------------------------------------------------------------------------
-
 func TestCashFlowsSort(t *testing.T) {
 	d1 := anchor.AddDate(0, 0, 10)
 	d2 := anchor.AddDate(0, 0, 5)
@@ -141,9 +136,31 @@ func TestCashFlowsSort(t *testing.T) {
 }
 
 // -----------------------------------------------------------------------------
+// CashFlows.Sort – equal-date branch
+// -----------------------------------------------------------------------------
+func TestCashFlowsSortEqualDates(t *testing.T) {
+	dSame := anchor                   // 2020-01-01
+	dAfter := anchor.AddDate(0, 0, 1) // 2020-01-02
+
+	cfs := CashFlows{
+		{Value: 100, Date: dSame}, // two items share the same Date
+		{Value: 200, Date: dAfter},
+		{Value: 300, Date: dSame},
+	}
+
+	cfs.Sort()
+
+	// After sorting the two identical-date cash-flows must come before the later one.
+	if !(cfs[0].Date.Equal(dSame) &&
+		cfs[1].Date.Equal(dSame) &&
+		cfs[2].Date.Equal(dAfter)) {
+		t.Errorf("CashFlows.Sort (equal dates) order incorrect: %+v", cfs)
+	}
+}
+
+// -----------------------------------------------------------------------------
 // NPV
 // -----------------------------------------------------------------------------
-
 func TestNPV(t *testing.T) {
 	r := RateAnnualContinuous{Value: 0.10} // 10 % continuous
 
@@ -168,7 +185,6 @@ func TestNPV(t *testing.T) {
 // -----------------------------------------------------------------------------
 // IRR
 // -----------------------------------------------------------------------------
-
 func TestIRRSimpleTwoPeriod(t *testing.T) {
 	cfs := CashFlows{
 		{-100, anchor},
