@@ -5,24 +5,9 @@ import (
 	"testing"
 )
 
-// almostEq is a fuzzy equals.
-// This relative test is stable across wide floating–point ranges.
-// Math details: combines
-//
-// RelativeError = |a - b| / max(|a|, |b|)
-//
-// AbsoluteError = |a - b|
-//
-// side-stepping the issue when a, b are close to 0,
-// so denominator of RelativeError explodes.
-func almostEq(a, b, epsilon float64) bool {
-	scale := math.Max(1, math.Max(math.Abs(a), math.Abs(b)))
-	return math.Abs(a-b) <= epsilon*scale
-}
-
-// epsilon is large enough to hide last-bit noise but small enough to catch logic errors.
-const epsilon = 1e-12
-
+// -----------------------------------------------------------------------------
+// RateAnnualPercentage
+// -----------------------------------------------------------------------------
 func TestRateAnnualPercentage(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -93,11 +78,11 @@ func TestRateAnnualPercentage(t *testing.T) {
 				t.Fatalf("RateAnnualEffective() got %v, want %v", gotEA, tc.wantEffAnnual)
 			}
 
-			gotC := tc.apr.RateContinuous()
+			gotC := tc.apr.RateAnnualContinuous()
 			if math.IsNaN(tc.wantContinuous) && !math.IsNaN(gotC) {
-				t.Fatalf("RateContinuous() got %v, want NaN", gotC)
+				t.Fatalf("RateAnnualContinuous() got %v, want NaN", gotC)
 			} else if !almostEq(gotC, tc.wantContinuous, epsilon) {
-				t.Fatalf("RateContinuous() got %v, want %v", gotC, tc.wantContinuous)
+				t.Fatalf("RateAnnualContinuous() got %v, want %v", gotC, tc.wantContinuous)
 			}
 		})
 	}
@@ -106,7 +91,6 @@ func TestRateAnnualPercentage(t *testing.T) {
 // -----------------------------------------------------------------------------
 // RateEffective
 // -----------------------------------------------------------------------------
-
 func TestRateEffective(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -159,21 +143,20 @@ func TestRateEffective(t *testing.T) {
 			if got := tc.reff.RateAnnualEffective(); !almostEq(got, tc.wantEffAnnual, epsilon) {
 				t.Fatalf("RateAnnualEffective() got %v, want %v", got, tc.wantEffAnnual)
 			}
-			if got := tc.reff.RateContinuous(); !almostEq(got, tc.wantContinuous, epsilon) {
-				t.Fatalf("RateContinuous() got %v, want %v", got, tc.wantContinuous)
+			if got := tc.reff.RateAnnualContinuous(); !almostEq(got, tc.wantContinuous, epsilon) {
+				t.Fatalf("RateAnnualContinuous() got %v, want %v", got, tc.wantContinuous)
 			}
 		})
 	}
 }
 
 // -----------------------------------------------------------------------------
-// RateContinuous
+// RateAnnualContinuous
 // -----------------------------------------------------------------------------
-
-func TestRateContinuous(t *testing.T) {
+func TestRateAnnualContinuous(t *testing.T) {
 	tests := []struct {
 		name           string
-		rcont          RateContinuous
+		rcont          RateAnnualContinuous
 		years          float64
 		wantDF         float64
 		wantEffAnnual  float64
@@ -181,7 +164,7 @@ func TestRateContinuous(t *testing.T) {
 	}{
 		{
 			name:           "4% continuous, 7 y",
-			rcont:          RateContinuous{Value: 0.04},
+			rcont:          RateAnnualContinuous{Value: 0.04},
 			years:          7,
 			wantDF:         math.Exp(-0.04 * 7),
 			wantEffAnnual:  math.Exp(0.04) - 1,
@@ -189,7 +172,7 @@ func TestRateContinuous(t *testing.T) {
 		},
 		{
 			name:           "zero years",
-			rcont:          RateContinuous{Value: 0.04},
+			rcont:          RateAnnualContinuous{Value: 0.04},
 			years:          0,
 			wantDF:         1,
 			wantEffAnnual:  math.Exp(0.04) - 1,
@@ -197,7 +180,7 @@ func TestRateContinuous(t *testing.T) {
 		},
 		{
 			name:           "negative continuous rate (deflation)",
-			rcont:          RateContinuous{Value: -0.01},
+			rcont:          RateAnnualContinuous{Value: -0.01},
 			years:          3,
 			wantDF:         math.Exp(0.01 * 3), // minus minus
 			wantEffAnnual:  math.Exp(-0.01) - 1,
@@ -205,7 +188,7 @@ func TestRateContinuous(t *testing.T) {
 		},
 		{
 			name:           "huge positive rate (overflow safe)",
-			rcont:          RateContinuous{Value: 100},
+			rcont:          RateAnnualContinuous{Value: 100},
 			years:          0.01,
 			wantDF:         math.Exp(-1), // exactly e^-1
 			wantEffAnnual:  math.Exp(100) - 1,
@@ -222,8 +205,8 @@ func TestRateContinuous(t *testing.T) {
 			if got := tc.rcont.RateAnnualEffective(); !almostEq(got, tc.wantEffAnnual, epsilon) {
 				t.Fatalf("RateAnnualEffective() got %v, want %v", got, tc.wantEffAnnual)
 			}
-			if got := tc.rcont.RateContinuous(); got != tc.wantContinuous {
-				t.Fatalf("RateContinuous() got %v, want %v", got, tc.wantContinuous)
+			if got := tc.rcont.RateAnnualContinuous(); got != tc.wantContinuous {
+				t.Fatalf("RateAnnualContinuous() got %v, want %v", got, tc.wantContinuous)
 			}
 		})
 	}
@@ -237,17 +220,6 @@ func TestRateInterfaceSatisfaction(t *testing.T) {
 	var (
 		_ Rate = RateAnnualPercentage{Value: 0.01, PeriodsPerYear: 12}
 		_ Rate = RateEffective{Value: 0.01, PeriodsPerYear: 12}
-		_ Rate = RateContinuous{Value: 0.01}
+		_ Rate = RateAnnualContinuous{Value: 0.01}
 	)
-}
-
-// -----------------------------------------------------------------------------
-// Benchmarks (optional but often handy for perf regressions)
-// -----------------------------------------------------------------------------
-
-func BenchmarkRateAnnualPercentageDiscountFactor(b *testing.B) {
-	r := RateAnnualPercentage{Value: 0.05, PeriodsPerYear: 12}
-	for i := 0; i < b.N; i++ {
-		_ = r.DiscountFactor(5)
-	}
 }

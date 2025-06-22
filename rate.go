@@ -20,9 +20,9 @@ type Rate interface {
 	// For more on this rate see [RateAnnualEffective].
 	RateAnnualEffective() float64
 
-	// RateContinuous converts any rate to continuous rate.
-	// For more on this rate see [RateContinuous].
-	RateContinuous() float64
+	// RateAnnualContinuous converts any rate to continuous rate.
+	// For more on this rate see [RateAnnualContinuous].
+	RateAnnualContinuous() float64
 }
 
 // RateAnnualPercentage implements [Rate] for annual percentage rate.
@@ -54,14 +54,14 @@ func (r RateAnnualPercentage) RateAnnualEffective() float64 {
 	return math.Pow(1+r.Value/r.PeriodsPerYear, r.PeriodsPerYear) - 1
 }
 
-// RateContinuous implements [Rate].
-// RateContinuous converts any rate to continuous rate.
+// RateAnnualContinuous implements [Rate].
+// RateAnnualContinuous converts any rate to continuous rate.
 // Math details:
 //
 // CompoundFactor = 1 + EffectiveAnnualRate = e^{ContinuousRate}
 //
 // ContinuousRate = ln(1 + EffectiveAnnualRate)
-func (r RateAnnualPercentage) RateContinuous() float64 {
+func (r RateAnnualPercentage) RateAnnualContinuous() float64 {
 	return math.Log(1 + r.RateAnnualEffective())
 }
 
@@ -93,21 +93,22 @@ func (r RateEffective) RateAnnualEffective() float64 {
 	return math.Pow(1+r.Value, r.PeriodsPerYear) - 1
 }
 
-// RateContinuous implements [Rate].
-// RateContinuous converts any rate to continuous rate.
+// RateAnnualContinuous implements [Rate].
+// RateAnnualContinuous converts any rate to continuous rate.
 // Math details:
 //
 // CompoundFactor = 1 + EffectiveAnnualRate = e^{ContinuousRate}
 //
 // ContinuousRate = ln(1 + EffectiveAnnualRate)
-func (r RateEffective) RateContinuous() float64 {
+func (r RateEffective) RateAnnualContinuous() float64 {
 	return math.Log(1 + r.RateAnnualEffective())
 }
 
-// RateContinuous implements [Rate] for continuous rate.
-// No need to specify compounding frequency as it is already specified (continuous).
-// For more details, see [RateContinuous.DiscountFactor].
-type RateContinuous struct {
+// RateAnnualContinuous implements [Rate] for continuous rate.
+// For ease of use, it is assumed that continuous rates are always annual,
+// that is the exponent to be used is years to arrive at the discount factor.
+// For more details, see [RateAnnualContinuous.DiscountFactor].
+type RateAnnualContinuous struct {
 	Value float64
 }
 
@@ -126,7 +127,7 @@ type RateContinuous struct {
 // AnnualPercentageRate compounded continuously = ContinuousRate
 //
 // DiscountFactor = e^{ContinuousRate * -Years}
-func (r RateContinuous) DiscountFactor(years float64) float64 {
+func (r RateAnnualContinuous) DiscountFactor(years float64) float64 {
 	return math.Exp(r.Value * -years)
 }
 
@@ -137,15 +138,15 @@ func (r RateContinuous) DiscountFactor(years float64) float64 {
 // CompoundFactor = e^ContinuousRate = 1 + EffectiveAnnualRate
 //
 // EffectiveAnnualRate = e^ContinuousRate - 1
-func (r RateContinuous) RateAnnualEffective() float64 {
+func (r RateAnnualContinuous) RateAnnualEffective() float64 {
 	return math.Exp(r.Value) - 1
 }
 
-// RateContinuous implements [Rate].
-// RateContinuous converts any rate to continuous rate.
+// RateAnnualContinuous implements [Rate].
+// RateAnnualContinuous converts any rate to continuous rate.
 // Math details:
 //
 // ContinuousRate = ContinuousRate
-func (r RateContinuous) RateContinuous() float64 {
+func (r RateAnnualContinuous) RateAnnualContinuous() float64 {
 	return r.Value
 }
