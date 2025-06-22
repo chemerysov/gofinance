@@ -3,7 +3,7 @@ package gofinance
 import (
 	"errors"
 	"fmt"
-	"sort"
+	"slices"
 	"time"
 
 	"github.com/khezen/rootfinding" // for [IRR]
@@ -133,12 +133,19 @@ func (cf CashFlow) PresentValueNow(r Rate) float64 {
 // All collection methods leave the original slice untouched (except [Sort]).
 type CashFlows []CashFlow
 
-// Sort orders the cash‑flows in‑place by ascending [Date]. Useful before [IRR]
-// calculations that implicitly take the first cash‑flow as the time‑zero
-// reference.
+// Sort orders the cash-flows in-place by ascending Date.
+// Useful before IRR calculations that implicitly take the
+// first cash-flow as the time-zero reference.
 func (cfs CashFlows) Sort() {
-	sort.Slice(cfs, func(i, j int) bool {
-		return cfs[i].Date.Before(cfs[j].Date)
+	slices.SortFunc(cfs, func(a, b CashFlow) int {
+		switch {
+		case a.Date.Before(b.Date):
+			return -1 // a < b
+		case a.Date.After(b.Date):
+			return 1 // a > b
+		default:
+			return 0 // a == b
+		}
 	})
 }
 

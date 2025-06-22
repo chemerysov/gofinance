@@ -1,4 +1,4 @@
-name: Go tests
+name: go tests
 
 on: [push, pull_request]
 
